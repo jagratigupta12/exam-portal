@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Result - {{ attempt.exam.title }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="card" style="text-align:center; margin-top:2rem;">
+    <h2 style="margin-bottom:0.3rem;">{{ attempt.exam.title }}</h2>
+    <p style="color:var(--muted);">Result for {{ attempt.student_name }}
+      {% if attempt.enrollment_no %} | <strong>{{ attempt.enrollment_no }}</strong>{% endif %}
+    </p>
+
+    <div class="score-ring" style="margin-top:1.5rem;
+      border-color:{% if percentage >= 80 %}#16a34a{% elif percentage >= 50 %}#2563eb{% else %}#e84c1e{% endif %};">
+      <span class="score-num"
+        style="color:{% if percentage >= 80 %}#16a34a{% elif percentage >= 50 %}#2563eb{% else %}#e84c1e{% endif %};">
+        {{ percentage }}%
+      </span>
+      <span class="score-label">Score</span>
+    </div>
+
+    <!-- Score Stats -->
+    <div class="grid-3" style="margin-bottom:1.5rem;">
+      <div class="stat-card">
+        <div class="stat-val">{{ attempt.total_marks|floatformat:1 }}</div>
+        <div class="stat-lbl">Total Marks</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">{{ attempt.max_possible_marks|floatformat:0 }}</div>
+        <div class="stat-lbl">Max Marks</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--accent2);">{{ attempt.test2_bonus_marks|floatformat:1 }}</div>
+        <div class="stat-lbl">Test 2 Bonus</div>
+      </div>
+    </div>
+
+    <!-- Test 1 Correct Questions Count -->
+    <div class="grid-3" style="margin-bottom:1.5rem;">
+      <div class="stat-card" style="border-top:3px solid #16a34a;">
+        <div class="stat-val" style="color:#16a34a;">{{ t1_correct }}</div>
+        <div class="stat-lbl">Correct in Test 1</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid #ef4444;">
+        <div class="stat-val" style="color:#ef4444;">{{ t1_wrong }}</div>
+        <div class="stat-lbl">Wrong in Test 1</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid #9ca3af;">
+        <div class="stat-val" style="color:#9ca3af;">{{ t1_skipped }}</div>
+        <div class="stat-lbl">Skipped in Test 1</div>
+      </div>
+    </div>
+
+    <div style="background:#f9f8f6; border-radius:10px; padding:1.2rem; text-align:left; font-size:0.9rem; line-height:1.8;">
+      <strong>Score Breakdown:</strong><br>
+      📌 Direct marks (not in Test 2): <strong>{{ attempt.test1_direct_marks|floatformat:1 }}</strong><br>
+      🎯 Bonus marks from Test 2: <strong>{{ attempt.test2_bonus_marks|floatformat:1 }}</strong><br>
+      ✅ Total: <strong>{{ attempt.total_marks|floatformat:1 }} / {{ attempt.max_possible_marks|floatformat:0 }}</strong>
+    </div>
+  </div>
+
+  <!-- Test 1 Detail -->
+  <div class="card">
+    <h3 style="margin-bottom:1rem;">Test 1 — MCQ Answers</h3>
+    {% for t1a in t1_answers %}
+    <div style="display:flex; justify-content:space-between; align-items:start;
+                padding:0.7rem 0; border-bottom:1px solid var(--border);">
+      <div style="flex:1;">
+        <p style="font-size:0.9rem;"><strong>Q{{ t1a.question.order }}.</strong> {{ t1a.question.question_text }}</p>
+        <p style="font-size:0.82rem; color:var(--muted); margin-top:0.2rem;">
+          Your answer: <strong>{{ t1a.selected_option|default:"(not answered)" }}</strong>
+          &nbsp;|&nbsp; Correct: <strong>{{ t1a.question.correct_option }}</strong>
+        </p>
+      </div>
+      <div style="margin-left:1rem;">
+        {% if t1a.promoted_to_test2 %}
+          <span class="badge badge-blue">→ Test 2</span>
+        {% elif t1a.is_correct %}
+          <span class="badge badge-green">✓ {{ t1a.question.marks }}pts</span>
+        {% else %}
+          <span class="badge badge-red">✗ 0pts</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if t2_answers %}
+  <div class="card">
+    <h3 style="margin-bottom:1rem;">Test 2 — One Word Answers</h3>
+    {% for t2a in t2_answers %}
+    <div style="display:flex; justify-content:space-between; align-items:start;
+                padding:0.7rem 0; border-bottom:1px solid var(--border);">
+      <div style="flex:1;">
+        <p style="font-size:0.9rem;"><strong>{{ t2a.oneword_question.question_text }}</strong></p>
+        <p style="font-size:0.82rem; color:var(--muted); margin-top:0.2rem;">
+          Your answer: <strong>{{ t2a.student_answer|default:"(blank)" }}</strong>
+          &nbsp;|&nbsp; Correct: <strong>{{ t2a.oneword_question.correct_answer }}</strong>
+        </p>
+        <p style="font-size:0.78rem; color:var(--muted);">
+          (corresponds to MCQ Q{{ t2a.oneword_question.corresponding_mcq.order }})
+        </p>
+      </div>
+      <div style="margin-left:1rem;">
+        {% if t2a.is_correct %}
+          <span class="badge badge-green">✓ {{ t2a.oneword_question.corresponding_mcq.marks }}pts</span>
+        {% else %}
+          <span class="badge badge-red">✗ 0pts</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

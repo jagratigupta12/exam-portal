@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}Detail - {{ attempt.student_name }}{% endblock %}
+{% block content %}
+<div class="container-wide">
+
+  <!-- Header -->
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+    <div class="page-header" style="margin:0;">
+      <h1>{{ attempt.student_name }}</h1>
+      <p>
+        {% if attempt.enrollment_no %}
+        <strong>{{ attempt.enrollment_no }}</strong> &nbsp;|&nbsp;
+        {% endif %}
+        {{ attempt.exam.title }} &nbsp;|&nbsp;
+        {{ attempt.started_at|date:"d M Y, h:i A" }}
+      </p>
+    </div>
+    <div style="display:flex; gap:0.7rem;">
+      <a href="{% url 'student_analytics' attempt.id %}" class="btn btn-primary">📊 Analytics</a>
+      <a href="{% url 'generate_result_pdf' attempt.id %}" class="btn btn-outline">📄 PDF</a>
+      <a href="{% url 'exam_results' attempt.exam.id %}" class="btn btn-outline">← Results</a>
+    </div>
+  </div>
+
+  <!-- Score Summary -->
+  <div class="grid-3" style="margin-bottom:1.2rem;">
+    <div class="stat-card" style="text-align:center; border-top:4px solid #2563eb;">
+      <div class="stat-val" style="color:#2563eb;">{{ attempt.total_marks|floatformat:1 }}</div>
+      <div class="stat-lbl">Total Marks Scored</div>
+    </div>
+    <div class="stat-card" style="text-align:center; border-top:4px solid #6b7280;">
+      <div class="stat-val">{{ attempt.max_possible_marks|floatformat:0 }}</div>
+      <div class="stat-lbl">Maximum Marks</div>
+    </div>
+    <div class="stat-card" style="text-align:center; border-top:4px solid
+      {% if percentage >= 75 %}#16a34a{% elif percentage >= 50 %}#d97706{% else %}#dc2626{% endif %};">
+      <div class="stat-val" style="color:
+        {% if percentage >= 75 %}#16a34a{% elif percentage >= 50 %}#d97706{% else %}#dc2626{% endif %};">
+        {{ percentage }}%
+      </div>
+      <div class="stat-lbl">Percentage</div>
+    </div>
+  </div>
+
+  <!-- Marks Breakdown -->
+  <div class="grid-2" style="margin-bottom:1.2rem;">
+    <div class="stat-card">
+      <div style="font-size:0.82rem; color:var(--muted); margin-bottom:0.4rem;">TEST 1 DIRECT MARKS</div>
+      <div class="stat-val" style="font-size:1.5rem;">{{ attempt.test1_direct_marks|floatformat:1 }}</div>
+      <div style="font-size:0.78rem; color:var(--muted);">Questions not sent to Test 2</div>
+    </div>
+    <div class="stat-card">
+      <div style="font-size:0.82rem; color:var(--muted); margin-bottom:0.4rem;">TEST 2 BONUS MARKS</div>
+      <div class="stat-val" style="font-size:1.5rem; color:#2563eb;">{{ attempt.test2_bonus_marks|floatformat:1 }}</div>
+      <div style="font-size:0.78rem; color:var(--muted);">Correctly answered in Test 2</div>
+    </div>
+  </div>
+
+  <!-- Test 1 Summary Cards -->
+  <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0.8rem; margin-bottom:1.5rem;">
+    <div style="background:white; border:1px solid var(--border); border-top:4px solid #6b7280;
+                border-radius:10px; padding:1rem; text-align:center;">
+      <div style="font-size:1.8rem; font-weight:800;">{{ t1_total }}</div>
+      <div style="font-size:0.75rem; color:var(--muted); margin-top:0.2rem;">Total Qs in Test 1</div>
+    </div>
+    <div style="background:white; border:1px solid var(--border); border-top:4px solid #16a34a;
+                border-radius:10px; padding:1rem; text-align:center;">
+      <div style="font-size:1.8rem; font-weight:800; color:#16a34a;">{{ t1_correct }}</div>
+      <div style="font-size:0.75rem; color:var(--muted); margin-top:0.2rem;">Correct (Direct)</div>
+    </div>
+    <div style="background:white; border:1px solid var(--border); border-top:4px solid #ef4444;
+                border-radius:10px; padding:1rem; text-align:center;">
+      <div style="font-size:1.8rem; font-weight:800; color:#ef4444;">{{ t1_wrong }}</div>
+      <div style="font-size:0.75rem; color:var(--muted); margin-top:0.2rem;">Wrong / {{ t1_total }}</div>
+    </div>
+    <div style="background:white; border:1px solid var(--border); border-top:4px solid #9ca3af;
+                border-radius:10px; padding:1rem; text-align:center;">
+      <div style="font-size:1.8rem; font-weight:800; color:#9ca3af;">{{ t1_skipped }}</div>
+      <div style="font-size:0.75rem; color:var(--muted); margin-top:0.2rem;">Skipped</div>
+    </div>
+    <div style="background:white; border:1px solid var(--border); border-top:4px solid #7c3aed;
+                border-radius:10px; padding:1rem; text-align:center;">
+      <div style="font-size:1.8rem; font-weight:800; color:#7c3aed;">{{ t1_promoted }}</div>
+      <div style="font-size:0.75rem; color:var(--muted); margin-top:0.2rem;">Sent to Test 2</div>
+    </div>
+  </div>
+
+  <!-- Total Correct Banner -->
+  <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px;
+              padding:1rem 1.5rem; margin-bottom:1.5rem;
+              display:flex; align-items:center; justify-content:space-between;">
+    <div>
+      <div style="font-size:0.82rem; font-weight:600; color:#92400e; margin-bottom:0.2rem;">
+        TOTAL CORRECT IN TEST 1 (including promoted)
+      </div>
+      <div style="font-size:0.78rem; color:#92400e;">
+        Direct correct + sent to Test 2 = all questions student answered correctly
+      </div>
+    </div>
+    <div style="text-align:center; margin-left:2rem;">
+      <div style="font-size:2.2rem; font-weight:800; color:#d97706;">
+        {{ t1_total_correct }} / {{ t1_total }}
+      </div>
+      {% if t1_total > 0 %}
+      <div style="font-size:0.8rem; color:#92400e;">
+        {% widthratio t1_total_correct t1_total 100 %}% accuracy
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- TEST 1 DETAILED TABLE -->
+  <div class="card" style="margin-bottom:1.5rem; padding:0; overflow:hidden;">
+    <div style="padding:1.2rem 1.5rem; border-bottom:2px solid var(--border);
+                display:flex; justify-content:space-between; align-items:center;">
+      <h3>Test 1 — MCQ Answers</h3>
+      <div style="display:flex; gap:0.8rem; font-size:0.82rem;">
+        <span>Total: <strong>{{ t1_total }}</strong></span>
+        <span style="color:#16a34a;">✓ Correct: <strong>{{ t1_correct }}</strong></span>
+        <span style="color:#ef4444;">✗ Wrong: <strong>{{ t1_wrong }}</strong></span>
+        <span style="color:#6b7280;">— Skipped: <strong>{{ t1_skipped }}</strong></span>
+        <span style="color:#7c3aed;">→ Test 2: <strong>{{ t1_promoted }}</strong></span>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:50px;">#</th>
+          <th>Question</th>
+          <th style="width:110px; text-align:center;">Student Ans</th>
+          <th style="width:110px; text-align:center;">Correct Ans</th>
+          <th style="width:80px; text-align:center;">Marks</th>
+          <th style="width:110px; text-align:center;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t1a in t1_answers %}
+        <tr>
+          <td style="font-weight:700; color:var(--muted); text-align:center;">{{ t1a.question.order }}</td>
+          <td style="font-size:0.88rem;">{{ t1a.question.question_text|truncatechars:90 }}</td>
+          <td style="text-align:center;">
+            {% if t1a.selected_option %}
+              <strong>{{ t1a.selected_option }}</strong>
+            {% else %}
+              <span style="color:var(--muted);">—</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center; color:#16a34a; font-weight:700;">
+            {{ t1a.question.correct_option }}
+          </td>
+          <td style="text-align:center;">{{ t1a.question.marks }}</td>
+          <td style="text-align:center;">
+            {% if t1a.promoted_to_test2 %}
+              <span class="badge badge-blue">→ Test 2</span>
+            {% elif t1a.is_correct %}
+              <span class="badge badge-green">✓ Correct</span>
+            {% elif not t1a.selected_option %}
+              <span class="badge" style="background:#f3f4f6; color:#6b7280;">Skipped</span>
+            {% else %}
+              <span class="badge badge-red">✗ Wrong</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TEST 2 DETAILED TABLE -->
+  {% if t2_answers %}
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div style="padding:1.2rem 1.5rem; border-bottom:2px solid var(--border);
+                display:flex; justify-content:space-between; align-items:center;">
+      <h3>Test 2 — One Word Answers</h3>
+      <div style="display:flex; gap:0.8rem; font-size:0.82rem;">
+        <span>Total: <strong>{{ t2_answers|length }}</strong></span>
+        <span style="color:#16a34a;">✓ Correct: <strong>{{ t2_correct }}</strong></span>
+        <span style="color:#ef4444;">✗ Wrong: <strong>{{ t2_wrong }}</strong></span>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>One-Word Question</th>
+          <th>Student Answer</th>
+          <th>Correct Answer</th>
+          <th style="text-align:center;">Linked MCQ</th>
+          <th style="text-align:center;">Marks</th>
+          <th style="text-align:center;">Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t2a in t2_answers %}
+        <tr>
+          <td style="font-weight:700; color:var(--muted); text-align:center;">{{ forloop.counter }}</td>
+          <td style="font-size:0.88rem; font-weight:500;">{{ t2a.oneword_question.question_text }}</td>
+          <td>
+            {% if t2a.student_answer %}
+              <strong>{{ t2a.student_answer }}</strong>
+            {% else %}
+              <span style="color:var(--muted);">—</span>
+            {% endif %}
+          </td>
+          <td style="color:#16a34a; font-weight:700;">{{ t2a.oneword_question.correct_answer }}</td>
+          <td style="text-align:center; font-size:0.8rem; color:var(--muted);">
+            Q{{ t2a.oneword_question.corresponding_mcq.order }}
+          </td>
+          <td style="text-align:center;">{{ t2a.oneword_question.corresponding_mcq.marks }}</td>
+          <td style="text-align:center;">
+            {% if t2a.is_correct %}
+              <span class="badge badge-green">✓ Correct</span>
+            {% else %}
+              <span class="badge badge-red">✗ Wrong</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

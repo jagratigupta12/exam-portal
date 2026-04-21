@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Manage Students - {{ exam.title }}{% endblock %}
+{% block content %}
+<div class="container-wide">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+    <div class="page-header" style="margin:0;">
+      <h1>Student Access Codes</h1>
+      <p>{{ exam.title }}</p>
+    </div>
+    <div style="display:flex; gap:0.7rem;">
+      <a href="{% url 'download_student_codes_pdf' exam.id %}" class="btn btn-outline">📄 Download Codes PDF</a>
+      <a href="{% url 'teacher_dashboard' %}" class="btn btn-outline">← Dashboard</a>
+    </div>
+  </div>
+
+  {% if success %}<div class="alert alert-success">✅ {{ success }}</div>{% endif %}
+  {% for e in errors %}<div class="alert alert-error">⚠ {{ e }}</div>{% endfor %}
+
+  {% if new_codes %}
+  <div class="card" style="border:2px solid #16a34a; margin-bottom:1.5rem;">
+    <h3 style="color:#16a34a; margin-bottom:1rem;">🎉 New Codes — Share with students!</h3>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Name</th><th>Enrollment</th><th>Code</th><th>Exam Link</th></tr></thead>
+        <tbody>
+          {% for ac in new_codes %}
+          <tr>
+            <td><strong>{{ ac.student_name }}</strong></td>
+            <td><code>{{ ac.enrollment_no|default:"—" }}</code></td>
+            <td>
+              <span style="font-family:monospace; font-size:1.1rem; font-weight:700;
+                background:#f0fdf4; padding:0.3rem 0.8rem; border-radius:6px; letter-spacing:0.15em;">
+                {{ ac.code }}
+              </span>
+            </td>
+            <td style="font-size:0.82rem; color:var(--accent2);">
+              {{ request.scheme }}://{{ request.get_host }}{% url 'student_register' exam.id %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="grid-2" style="align-items:start;">
+
+    <!-- LEFT: Add Students -->
+    <div class="card">
+      <h3 style="margin-bottom:1rem;">➕ Add Students</h3>
+
+      <!-- Tab buttons -->
+      <div style="display:flex; gap:0.5rem; margin-bottom:1.2rem;">
+        <button onclick="showTab('manual')" id="tab-manual" class="btn btn-accent btn-sm">✍️ Manual</button>
+        <button onclick="showTab('file')"   id="tab-file"   class="btn btn-outline btn-sm">📁 Upload File</button>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" id="studentForm">
+        {% csrf_token %}
+
+        <!-- Manual Tab -->
+        <div id="tab-manual-content">
+          <p style="font-size:0.82rem; color:var(--muted); margin-bottom:0.8rem;">
+            One student per line: <code>Name, EnrollmentNo</code> or <code>Name, EnrollmentNo, email</code>
+          </p>
+          <div class="form-group">
+            <textarea name="student_names" rows="7"
+              placeholder="Rahul Sharma, 2021CS001&#10;Priya Singh, 2021CS002&#10;Amit Kumar, 2021CS003, amit@email.com"></textarea>
+          </div>
+          <button type="submit" class="btn btn-accent" style="width:100%;">Add Students →</button>
+        </div>
+
+        <!-- File Tab -->
+        <div id="tab-file-content" style="display:none;">
+          <div style="background:#f9f8f6; border-radius:8px; padding:1rem; margin-bottom:1rem; font-size:0.82rem;">
+            <strong>Supported formats:</strong><br>
+            📊 <strong>Excel (.xlsx)</strong> — Col A: Name, Col B: Enrollment, Col C: Email<br>
+            📝 <strong>Word (.docx)</strong> — One student per line: Name, Enrollment<br>
+            📄 <strong>Text (.txt)</strong> — Same as Word format
+          </div>
+          <div class="form-group">
+            <label>Select File</label>
+            <input type="file" name="student_file" accept=".xlsx,.xls,.docx,.txt"
+                   style="padding:0.5rem;">
+          </div>
+          <a href="{% url 'download_sample_students' %}" class="btn btn-outline btn-sm"
+             style="margin-bottom:0.8rem; display:inline-block;">
+            ⬇️ Download Sample Excel
+          </a>
+          <button type="submit" class="btn btn-accent" style="width:100%;">Upload & Add →</button>
+        </div>
+      </form>
+
+      <hr class="divider">
+      <div style="background:#f9f8f6; border-radius:8px; padding:1rem; font-size:0.82rem;">
+        <strong>📋 Exam Link:</strong><br>
+        <code style="word-break:break-all; color:var(--accent2); font-size:0.78rem;">
+          {{ request.scheme }}://{{ request.get_host }}{% url 'student_register' exam.id %}
+        </code><br><br>
+        <strong>Student needs:</strong> Enrollment No. + Access Code
+      </div>
+    </div>
+
+    <!-- RIGHT: Student List -->
+    <div>
+      <h3 style="margin-bottom:1rem;">All Students ({{ codes.count }})</h3>
+      {% if codes %}
+      <div class="card" style="padding:0; overflow:hidden;">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Enrollment</th><th>Code</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for ac in codes %}
+            <tr>
+              <td><strong>{{ ac.student_name }}</strong>
+                {% if ac.student_email %}
+                <br><span style="font-size:0.75rem; color:var(--muted);">{{ ac.student_email }}</span>
+                {% endif %}
+              </td>
+              <td><code style="font-size:0.82rem;">{{ ac.enrollment_no|default:"—" }}</code></td>
+              <td><span style="font-family:monospace; font-weight:700; letter-spacing:0.1em;">{{ ac.code }}</span></td>
+              <td>
+                {% if ac.is_completed %}
+                  <span class="badge badge-green">✓ Done</span>
+                {% elif ac.is_used %}
+                  <span class="badge badge-blue">In Progress</span>
+                {% else %}
+                  <span class="badge badge-orange">Unused</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if not ac.is_used %}
+                <a href="{% url 'delete_access_code' ac.id %}"
+                   onclick="return confirm('Delete?')" class="btn btn-danger btn-sm">✕</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card" style="text-align:center; color:var(--muted); padding:2rem;">
+        No students added yet.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(t) {
+  document.getElementById('tab-manual-content').style.display = t==='manual' ? '' : 'none';
+  document.getElementById('tab-file-content').style.display   = t==='file'   ? '' : 'none';
+  document.getElementById('tab-manual').className = t==='manual' ? 'btn btn-accent btn-sm' : 'btn btn-outline btn-sm';
+  document.getElementById('tab-file').className   = t==='file'   ? 'btn btn-accent btn-sm' : 'btn btn-outline btn-sm';
+}
+</script>
+{% endblock %}

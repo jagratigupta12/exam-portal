@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}SEB Setup - {{ exam.title }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:680px;">
+  <div class="page-header" style="margin-top:2rem;">
+    <h1>🔒 Safe Exam Browser Setup</h1>
+    <p>{{ exam.title }}</p>
+  </div>
+
+  <!-- Download Button -->
+  <div class="card" style="text-align:center; padding:2rem; margin-bottom:1.5rem;
+       border:2px solid #7c3aed;">
+    <div style="font-size:2.5rem; margin-bottom:0.8rem;">📥</div>
+    <h3 style="margin-bottom:0.5rem;">Download SEB Config File</h3>
+    <p style="color:var(--muted); margin-bottom:1.2rem; font-size:0.9rem;">
+      Students must open this file with Safe Exam Browser to take the exam.
+    </p>
+    <div style="display:flex; gap:0.8rem; justify-content:center; flex-wrap:wrap;">
+      <a href="{% url 'download_seb' exam.id %}?quit_password=teacher123"
+         class="btn btn-primary" style="background:#7c3aed;">
+        ⬇️ Download .seb File
+      </a>
+    </div>
+    <p style="font-size:0.78rem; color:var(--muted); margin-top:0.8rem;">
+      Quit password: <code style="background:#f0eeea; padding:2px 6px; border-radius:4px;">teacher123</code>
+      (change in URL if needed)
+    </p>
+  </div>
+
+  <!-- Step by step -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <h3 style="margin-bottom:1.2rem;">📋 Steps for Students</h3>
+    {% for step in steps %}
+    <div style="display:flex; gap:1rem; padding:0.8rem 0; border-bottom:1px solid var(--border);">
+      <span style="background:#1a1a2e; color:white; font-family:'Syne',sans-serif;
+        font-weight:700; width:28px; height:28px; border-radius:7px;
+        display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.85rem;">
+        {{ forloop.counter }}
+      </span>
+      <span style="font-size:0.9rem; line-height:1.5;">{{ step }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Teacher note -->
+  <div class="alert alert-info">
+    <strong>📡 Important:</strong> Make sure students connect to the <strong>same WiFi/network</strong>
+    as the server. Replace <code>127.0.0.1</code> with your computer's <strong>local IP address</strong>
+    (e.g. <code>192.168.1.10</code>) in Settings before generating the SEB file for other computers.
+  </div>
+
+  <a href="{% url 'add_questions' exam.id %}" class="btn btn-outline" style="margin-top:1rem;">
+    ← Back to Questions
+  </a>
+</div>
+{% endblock %}

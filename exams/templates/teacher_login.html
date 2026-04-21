@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Teacher Login{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 420px;">
+  <div style="margin-top: 3rem;" class="card">
+    <div class="page-header">
+      <h1 style="font-size: 1.6rem;">Teacher Login</h1>
+      <p>Access your exam dashboard</p>
+    </div>
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" name="username" required autofocus>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">
+        Login →
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

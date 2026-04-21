@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Instructions - {{ exam.title }}{% endblock %}
+{% block extra_head %}
+<style>
+nav { display:none; }
+body { background:#0d0d14; color:white; margin:0; }
+.instr-wrap {
+  min-height:100vh; display:flex; align-items:center;
+  justify-content:center; padding:2rem;
+}
+.instr-box {
+  background:#1a1a2e; border:1px solid rgba(255,255,255,0.1);
+  border-radius:16px; padding:2.5rem; max-width:680px; width:100%;
+}
+.exam-badge {
+  display:inline-block; background:#e84c1e; color:white;
+  font-size:0.72rem; font-weight:700; letter-spacing:0.1em;
+  padding:0.25rem 0.8rem; border-radius:20px; margin-bottom:1rem;
+}
+.instr-title {
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:1.8rem; font-weight:800; margin-bottom:0.3rem;
+}
+.instr-subtitle { color:rgba(255,255,255,0.6); font-size:0.92rem; margin-bottom:1.5rem; }
+.student-name { color:white; font-weight:700; }
+.student-enroll { color:#f59e0b; font-family:monospace; font-weight:700; }
+.info-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:1.5rem; }
+.info-card {
+  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px; padding:0.9rem 1.1rem;
+}
+.info-val {
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:1.3rem; font-weight:700; margin-bottom:0.1rem;
+}
+.info-lbl { font-size:0.75rem; color:rgba(255,255,255,0.4); }
+.rules-box {
+  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px; padding:1.2rem; margin-bottom:1.5rem;
+}
+.rule-line {
+  display:flex; align-items:flex-start; gap:0.7rem;
+  padding:0.4rem 0; border-bottom:1px solid rgba(255,255,255,0.05);
+  font-size:0.88rem; color:rgba(255,255,255,0.8); line-height:1.5;
+}
+.rule-line:last-child { border:none; }
+.rule-num {
+  background:#e84c1e; color:white; width:20px; height:20px;
+  border-radius:4px; font-size:0.7rem; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; margin-top:2px;
+}
+.start-btn {
+  width:100%; padding:1rem; border-radius:10px; border:none;
+  background:#e84c1e; color:white;
+  font-family:'Playfair Display',Georgia,serif;
+  font-weight:700; font-size:1rem; cursor:pointer;
+  transition:all 0.15s; display:flex; align-items:center;
+  justify-content:center; gap:0.5rem;
+}
+.start-btn:hover { background:#c83e12; transform:translateY(-1px); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="instr-wrap">
+  <div class="instr-box">
+    <span class="exam-badge">EXAM</span>
+    <h1 class="instr-title">{{ exam.title }}</h1>
+    <p class="instr-subtitle">
+      Welcome, <span class="student-name">{{ attempt.student_name }}</span>
+      {% if attempt.enrollment_no %}
+        &nbsp;|&nbsp; <span class="student-enroll">{{ attempt.enrollment_no }}</span>
+      {% endif %}
+    </p>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="info-val">{{ total_q }}</div>
+        <div class="info-lbl">MCQ Questions (Test 1)</div>
+      </div>
+      <div class="info-card">
+        <div class="info-val">{{ exam.duration_minutes }} min</div>
+        <div class="info-lbl">Time Limit</div>
+      </div>
+      <div class="info-card">
+        <div class="info-val">{{ total_marks }}</div>
+        <div class="info-lbl">Total Marks</div>
+      </div>
+      <div class="info-card">
+        <div class="info-val">2 Phases</div>
+        <div class="info-lbl">MCQ → One Word</div>
+      </div>
+    </div>
+
+    <div class="rules-box">
+      {% for line in exam.instructions.splitlines %}
+      {% if line.strip %}
+      <div class="rule-line">
+        <span class="rule-num">{{ forloop.counter }}</span>
+        <span>{{ line }}</span>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    <a href="{% url 'take_test1' attempt.id %}" class="start-btn">
+      ▶ Start Test
+    </a>
+  </div>
+</div>
+
+<script>
+for(var i=0;i<10;i++) history.pushState(null,'',window.location.href);
+window.addEventListener('popstate',function(){ history.pushState(null,'',window.location.href); });
+</script>
+{% endblock %}

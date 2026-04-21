@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Bulk Upload - {{ exam.title }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:700px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin:2rem 0 1.5rem;">
+    <h1 style="font-size:1.6rem;font-family:'Syne',sans-serif;">📤 Bulk Upload Questions</h1>
+    <a href="{% url 'add_questions' exam.id %}" class="btn btn-outline">← Back to Questions</a>
+  </div>
+
+  {% if done %}
+    {% if saved %}
+    <div class="alert alert-success">✅ {{ saved }} question(s) imported successfully!</div>
+    {% endif %}
+    {% for e in errors %}
+    <div class="alert alert-error">⚠ {{ e }}</div>
+    {% endfor %}
+    <div style="display:flex;gap:0.8rem;margin-top:1rem;">
+      <a href="{% url 'add_questions' exam.id %}" class="btn btn-accent">View Questions →</a>
+      <a href="{% url 'bulk_upload' exam.id %}" class="btn btn-outline">Upload More</a>
+    </div>
+  {% else %}
+
+  <!-- Format Tabs -->
+  <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;">
+    <button onclick="showTab('excel')" id="tab-excel" class="btn btn-accent btn-sm">📊 Excel</button>
+    <button onclick="showTab('word')" id="tab-word" class="btn btn-outline btn-sm">📝 Word</button>
+    <button onclick="showTab('text')" id="tab-text" class="btn btn-outline btn-sm">📄 Text</button>
+  </div>
+
+  <!-- EXCEL FORMAT -->
+  <div id="fmt-excel" class="card" style="margin-bottom:1.5rem;">
+    <h3 style="margin-bottom:0.8rem;">Excel Format (.xlsx)</h3>
+    <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem;">
+      Create an Excel file with these columns in order (Row 1 = headers, data from Row 2):
+    </p>
+    <div style="overflow-x:auto;">
+      <table style="font-size:0.8rem;min-width:600px;">
+        <thead>
+          <tr style="background:#f0eeea;">
+            <th style="padding:0.5rem;">A: MCQ Question</th>
+            <th style="padding:0.5rem;">B: Option A</th>
+            <th style="padding:0.5rem;">C: Option B</th>
+            <th style="padding:0.5rem;">D: Option C</th>
+            <th style="padding:0.5rem;">E: Option D</th>
+            <th style="padding:0.5rem;">F: Correct (A/B/C/D)</th>
+            <th style="padding:0.5rem;">G: Marks</th>
+            <th style="padding:0.5rem;">H: One-Word Q</th>
+            <th style="padding:0.5rem;">I: One-Word Ans</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:0.5rem;">What is 2+2?</td>
+            <td style="padding:0.5rem;">3</td>
+            <td style="padding:0.5rem;">4</td>
+            <td style="padding:0.5rem;">5</td>
+            <td style="padding:0.5rem;">6</td>
+            <td style="padding:0.5rem;font-weight:700;color:green;">B</td>
+            <td style="padding:0.5rem;">1</td>
+            <td style="padding:0.5rem;">Sum of 2 and 2?</td>
+            <td style="padding:0.5rem;">four</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- WORD FORMAT -->
+  <div id="fmt-word" class="card" style="margin-bottom:1.5rem;display:none;">
+    <h3 style="margin-bottom:0.8rem;">Word Format (.docx)</h3>
+    <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem;">
+      Write questions in your Word file using this format. Separate each question with <code>---</code>
+    </p>
+    <pre style="background:#f9f8f6;padding:1rem;border-radius:8px;font-size:0.82rem;line-height:1.8;overflow-x:auto;">Q: What is the capital of India?
+A: Mumbai
+B: Delhi
+C: Chennai
+D: Kolkata
+ANS: B
+MARKS: 1
+OW: Name the capital city of India
+OWA: Delhi
+---
+Q: Which planet is closest to the Sun?
+A: Earth
+B: Venus
+C: Mercury
+D: Mars
+ANS: C
+MARKS: 2
+OW: Nearest planet to Sun?
+OWA: Mercury</pre>
+  </div>
+
+  <!-- TEXT FORMAT -->
+  <div id="fmt-text" class="card" style="margin-bottom:1.5rem;display:none;">
+    <h3 style="margin-bottom:0.8rem;">Plain Text Format (.txt)</h3>
+    <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem;">
+      Same format as Word, save as a .txt file:
+    </p>
+    <pre style="background:#f9f8f6;padding:1rem;border-radius:8px;font-size:0.82rem;line-height:1.8;overflow-x:auto;">Q: What is 10 x 10?
+A: 10
+B: 100
+C: 1000
+D: 110
+ANS: B
+MARKS: 1
+OW: Square of 10?
+OWA: 100
+---
+Q: Next question here...</pre>
+  </div>
+
+  <!-- UPLOAD FORM -->
+  <div class="card">
+    <h3 style="margin-bottom:1rem;">Upload File</h3>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Select File (.xlsx, .docx, .txt)</label>
+        <input type="file" name="question_file" accept=".xlsx,.xls,.docx,.txt" required
+               style="padding:0.5rem;">
+      </div>
+      <button type="submit" class="btn btn-accent" style="width:100%;">
+        📤 Import Questions
+      </button>
+    </form>
+  </div>
+
+  {% endif %}
+</div>
+<script>
+function showTab(t) {
+  ['excel','word','text'].forEach(f => {
+    document.getElementById('fmt-'+f).style.display = f===t ? '' : 'none';
+    document.getElementById('tab-'+f).className = f===t ? 'btn btn-accent btn-sm' : 'btn btn-outline btn-sm';
+  });
+}
+</script>
+{% endblock %}

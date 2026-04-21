@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Analytics - {{ attempt.student_name }}{% endblock %}
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="container-wide">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+    <div class="page-header" style="margin:0;">
+      <h1>{{ attempt.student_name }}</h1>
+      <p>
+        {% if attempt.enrollment_no %}<strong>{{ attempt.enrollment_no }}</strong> &nbsp;|&nbsp;{% endif %}
+        {{ attempt.exam.title }}
+      </p>
+    </div>
+    <div style="display:flex; gap:0.7rem;">
+      <a href="{% url 'generate_result_pdf' attempt.id %}" class="btn btn-accent">⬇️ Download PDF</a>
+      <a href="{% url 'attempt_detail' attempt.id %}" class="btn btn-outline">Detail View</a>
+      <a href="{% url 'exam_results' attempt.exam.id %}" class="btn btn-outline">← Results</a>
+    </div>
+  </div>
+
+  <!-- Score Hero -->
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+    <div class="stat-card" style="border-top:4px solid #e84c1e; text-align:center;">
+      <div class="stat-val" style="color:#e84c1e; font-size:2.5rem;">{{ student_pct }}%</div>
+      <div class="stat-lbl">Student Score</div>
+    </div>
+    <div class="stat-card" style="border-top:4px solid #2563eb; text-align:center;">
+      <div class="stat-val" style="color:#2563eb; font-size:2.5rem;">{{ class_avg_pct }}%</div>
+      <div class="stat-lbl">Class Average</div>
+    </div>
+    <div class="stat-card" style="border-top:4px solid #16a34a; text-align:center;">
+      <div class="stat-val" style="color:#16a34a;">{{ rank }}</div>
+      <div class="stat-lbl">Rank in Class ({{ total_students }} students)</div>
+    </div>
+    <div class="stat-card" style="text-align:center;">
+      <div class="stat-val">{{ attempt.total_marks|floatformat:1 }}/{{ max_possible|floatformat:0 }}</div>
+      <div class="stat-lbl">Marks Scored</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:1.5rem;">
+    <!-- Test 1 Pie Chart -->
+    <div class="card">
+      <h3 style="margin-bottom:1rem;">Test 1 Performance</h3>
+      <canvas id="t1Pie" height="220"></canvas>
+      <div style="display:flex; justify-content:center; gap:1rem; margin-top:0.8rem; font-size:0.82rem;">
+        <span style="color:#16a34a;">● Correct: {{ t1_correct }}</span>
+        <span style="color:#ef4444;">● Wrong: {{ t1_wrong }}</span>
+        <span style="color:#9ca3af;">● Skipped: {{ t1_skipped }}</span>
+        <span style="color:#7c3aed;">● Test 2: {{ t1_promoted }}</span>
+      </div>
+    </div>
+
+    <!-- Student vs Class Bar -->
+    <div class="card">
+      <h3 style="margin-bottom:1rem;">Student vs Class Comparison</h3>
+      <canvas id="compareBar" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- Score Distribution -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <h3 style="margin-bottom:1rem;">Class Score Distribution</h3>
+    <canvas id="distBar" height="120"></canvas>
+    <p style="font-size:0.78rem; color:var(--muted); margin-top:0.5rem; text-align:center;">
+      Student score: <strong>{{ student_pct }}%</strong> &nbsp;|&nbsp;
+      Class avg: <strong>{{ class_avg_pct }}%</strong> &nbsp;|&nbsp;
+      Highest: <strong>{{ class_max|floatformat:1 }}</strong> &nbsp;|&nbsp;
+      Lowest: <strong>{{ class_min|floatformat:1 }}</strong>
+    </p>
+  </div>
+
+  <!-- Test 2 if exists -->
+  {% if t2_total > 0 %}
+  <div class="card" style="margin-bottom:1.5rem;">
+    <h3 style="margin-bottom:1rem;">Test 2 Performance</h3>
+    <div class="grid-2">
+      <canvas id="t2Pie" height="200"></canvas>
+      <div style="display:flex; flex-direction:column; justify-content:center; gap:0.8rem; padding:1rem;">
+        <div class="stat-card" style="text-align:center;">
+          <div class="stat-val" style="color:#16a34a;">{{ t2_correct }}</div>
+          <div class="stat-lbl">Correct / {{ t2_total }}</div>
+        </div>
+        <div class="stat-card" style="text-align:center;">
+          <div class="stat-val" style="color:#ef4444;">{{ t2_wrong }}</div>
+          <div class="stat-lbl">Wrong / {{ t2_total }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+// Test 1 Pie
+new Chart(document.getElementById('t1Pie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Correct', 'Wrong', 'Skipped', 'In Test 2'],
+    datasets: [{ data: [{{ t1_correct }}, {{ t1_wrong }}, {{ t1_skipped }}, {{ t1_promoted }}],
+      backgroundColor: ['#16a34a','#ef4444','#9ca3af','#7c3aed'], borderWidth:0 }]
+  },
+  options: { plugins: { legend: { position:'bottom' } }, cutout:'65%' }
+});
+
+// Compare Bar
+new Chart(document.getElementById('compareBar'), {
+  type: 'bar',
+  data: {
+    labels: ['Total Marks', 'Test 1 Correct', 'Test 2 Bonus'],
+    datasets: [
+      { label: 'This Student', data: [{{ attempt.total_marks }}, {{ t1_correct }}, {{ attempt.test2_bonus_marks }}],
+        backgroundColor: '#e84c1e', borderRadius: 6 },
+      { label: 'Class Average', data: [{{ class_avg }}, 0, 0],
+        backgroundColor: '#2563eb', borderRadius: 6 }
+    ]
+  },
+  options: { plugins: { legend: { position:'bottom' } },
+    scales: { y: { beginAtZero:true } } }
+});
+
+// Distribution
+new Chart(document.getElementById('distBar'), {
+  type: 'bar',
+  data: {
+    labels: ['0-25%','26-50%','51-75%','76-100%'],
+    datasets: [{ label: 'Students',
+      data: {{ bucket_list|safe }},
+      backgroundColor: ['#ef4444','#f59e0b','#2563eb','#16a34a'], borderRadius:6 }]
+  },
+  options: { plugins: { legend: { display:false } }, scales: { y: { beginAtZero:true, ticks:{ stepSize:1 } } } }
+});
+
+{% if t2_total > 0 %}
+new Chart(document.getElementById('t2Pie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Correct','Wrong'],
+    datasets: [{ data: [{{ t2_correct }}, {{ t2_wrong }}],
+      backgroundColor: ['#16a34a','#ef4444'], borderWidth:0 }]
+  },
+  options: { plugins: { legend: { position:'bottom' } }, cutout:'65%' }
+});
+{% endif %}
+</script>
+{% endblock %}

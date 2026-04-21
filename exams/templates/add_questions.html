@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block title %}Add Questions - {{ exam.title }}
+<!-- AI Generation Status -->
+<div id="aiStatus" style="display:none; margin-top:1rem;" class="alert alert-info">
+  <span id="aiStatusText">🤖 AI is generating Test 2 questions...</span>
+</div>
+
+{% if exam.ai_questions_generated %}
+<div class="alert alert-success" style="margin-top:1rem;">
+  ✅ AI has generated Test 2 questions for this exam. You can edit them by clicking each question.
+</div>
+{% endif %}
+
+<script>
+function generateAI() {
+  if (!confirm('AI will generate one-word Test 2 questions for ALL MCQs. This will REPLACE any existing Test 2 questions. Continue?')) return;
+
+  const btn = document.getElementById('aiBtn');
+  const status = document.getElementById('aiStatus');
+  const statusText = document.getElementById('aiStatusText');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+  status.style.display = 'block';
+  statusText.textContent = '🤖 AI is analysing your MCQs and generating Test 2 questions...';
+
+  fetch('/teacher/exam/{{ exam.id }}/generate-ai/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      statusText.textContent = '✅ ' + data.message;
+      status.className = 'alert alert-success';
+      btn.textContent = '✅ AI Done!';
+      setTimeout(() => location.reload(), 2000);
+    } else {
+      statusText.textContent = '❌ ' + data.message;
+      status.className = 'alert alert-error';
+      btn.disabled = false;
+      btn.textContent = '🤖 Generate Test 2 with AI';
+
+      // If no API key, redirect to profile
+      if (data.message.includes('API key')) {
+        if (confirm(data.message + '\n\nGo to Profile settings now?')) {
+          window.location.href = '/teacher/profile/';
+        }
+      }
+    }
+  })
+  .catch(err => {
+    statusText.textContent = '❌ Error: ' + err;
+    status.className = 'alert alert-error';
+    btn.disabled = false;
+    btn.textContent = '🤖 Generate Test 2 with AI';
+  });
+}
+</script>
+
+{% endblock %}
+{% block content %}
+<div class="container-wide">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+    <div class="page-header" style="margin:0;">
+      <h1>{{ exam.title }}</h1>
+      <p>Promote: <strong>{{ exam.test1_percentage }}%</strong> of correct answers to Test 2</p>
+    </div>
+    <div style="display:flex; gap:0.7rem;">
+      <a href="{% url 'teacher_dashboard' %}" class="btn btn-outline">← Dashboard</a>
+      <a href="{% url 'bulk_upload' exam.id %}" class="btn btn-outline">📤 Bulk Upload</a>
+      <a href="{% url 'edit_exam_settings' exam.id %}" class="btn btn-outline">⚙ Settings</a>
+      
+      <a href="{% url 'exam_results' exam.id %}" class="btn btn-primary">View Results</a>
+      <a href="{% url 'download_seb' exam.id %}?quit_password=teacher123"
+         class="btn btn-outline" style="border-color:#7c3aed; color:#7c3aed;">
+        🔒 Download SEB Config
+      </a>
+    </div>
+  </div>
+
+  <div class="grid-2" style="align-items:start;">
+    <!-- Add Question Form -->
+    <div class="card">
+      <h3 style="margin-bottom:1.2rem;">➕ Add New Question</h3>
+      <div id="addForm">
+        <div class="form-group">
+          <label>MCQ Question Text *</label>
+          <textarea id="f_question" placeholder="Enter the MCQ question..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Options (mark correct one)</label>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.6rem;">
+            <div style="display:flex; gap:0.4rem; align-items:center;">
+              <input type="radio" name="correct" value="A" id="cA">
+              <label for="cA" style="display:inline; font-weight:600; margin:0; color:var(--accent2);">A</label>
+              <input type="text" id="f_a" placeholder="Option A" style="flex:1;">
+            </div>
+            <div style="display:flex; gap:0.4rem; align-items:center;">
+              <input type="radio" name="correct" value="B" id="cB">
+              <label for="cB" style="display:inline; font-weight:600; margin:0; color:var(--accent2);">B</label>
+              <input type="text" id="f_b" placeholder="Option B" style="flex:1;">
+            </div>
+            <div style="display:flex; gap:0.4rem; align-items:center;">
+              <input type="radio" name="correct" value="C" id="cC">
+              <label for="cC" style="display:inline; font-weight:600; margin:0; color:var(--accent2);">C</label>
+              <input type="text" id="f_c" placeholder="Option C" style="flex:1;">
+            </div>
+            <div style="display:flex; gap:0.4rem; align-items:center;">
+              <input type="radio" name="correct" value="D" id="cD">
+              <label for="cD" style="display:inline; font-weight:600; margin:0; color:var(--accent2);">D</label>
+              <input type="text" id="f_d" placeholder="Option D" style="flex:1;">
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Marks for this question</label>
+          <input type="number" id="f_marks" value="1" min="1" max="10" style="width:120px;">
+        </div>
+        <hr class="divider">
+        <div class="form-group">
+          <label>Corresponding One-Word Question (for Test 2) *</label>
+          <input type="text" id="f_ow_q" placeholder="e.g. What is the capital of France?">
+        </div>
+        <div class="form-group">
+          <label>Correct Answer (one word/short phrase) *</label>
+          <input type="text" id="f_ow_ans" placeholder="e.g. Paris">
+        </div>
+        <div id="formMsg" class="alert" style="display:none;"></div>
+        <button onclick="saveQuestion()" class="btn btn-accent" style="width:100%;">Save Question</button>
+      </div>
+    </div>
+
+    <!-- Question List -->
+    <div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h3>Questions (<span id="qCount">{{ mcq_questions.count }}</span>)</h3>
+        <div>
+          <span style="font-size:0.8rem; color:var(--muted);">
+            Student link: 
+            <a href="{% url 'student_register' exam.id %}" target="_blank" style="color:var(--accent2);">
+              Open →
+            </a>
+          </span>
+        </div>
+      </div>
+      <div id="questionList">
+        {% for q in mcq_questions %}
+        <div class="question-card" id="qcard_{{ q.id }}">
+          <div style="display:flex; justify-content:space-between; align-items:start;">
+            <div>
+              <span class="q-number">{{ q.order }}</span>
+              <p style="font-weight:500; margin-bottom:0.5rem;">{{ q.question_text }}</p>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap; font-size:0.82rem;">
+                <span class="badge badge-blue">A: {{ q.option_a }}</span>
+                <span class="badge badge-blue">B: {{ q.option_b }}</span>
+                <span class="badge badge-blue">C: {{ q.option_c }}</span>
+                <span class="badge badge-blue">D: {{ q.option_d }}</span>
+                <span class="badge badge-green">✓ {{ q.correct_option }}</span>
+                <span class="badge badge-orange">{{ q.marks }} mark(s)</span>
+              </div>
+              {% if q.oneword %}
+              <p style="margin-top:0.5rem; font-size:0.85rem; color:var(--muted);">
+                🎯 Test 2: <em>{{ q.oneword.question_text }}</em> → <strong>{{ q.oneword.correct_answer }}</strong>
+              </p>
+              {% endif %}
+            </div>
+            <button onclick="deleteQ({{ q.id }})" class="btn btn-danger btn-sm">✕</button>
+          </div>
+        </div>
+        {% empty %}
+        <div class="card" style="text-align:center; color:var(--muted);" id="emptyMsg">
+          No questions yet. Add your first question.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const EXAM_ID = {{ exam.id }};
+const CSRF = '{{ csrf_token }}';
+
+async function saveQuestion() {
+  const question_text = document.getElementById('f_question').value.trim();
+  const option_a = document.getElementById('f_a').value.trim();
+  const option_b = document.getElementById('f_b').value.trim();
+  const option_c = document.getElementById('f_c').value.trim();
+  const option_d = document.getElementById('f_d').value.trim();
+  const correct_option = document.querySelector('input[name=correct]:checked')?.value;
+  const marks = document.getElementById('f_marks').value;
+  const oneword_question = document.getElementById('f_ow_q').value.trim();
+  const oneword_answer = document.getElementById('f_ow_ans').value.trim();
+  const msg = document.getElementById('formMsg');
+
+  if (!question_text || !option_a || !option_b || !option_c || !option_d || !correct_option || !oneword_question || !oneword_answer) {
+    msg.className = 'alert alert-error'; msg.style.display = 'block';
+    msg.textContent = 'Please fill all fields and select correct option.';
+    return;
+  }
+
+  const resp = await fetch(`/teacher/exam/${EXAM_ID}/save-mcq/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify({ question_text, option_a, option_b, option_c, option_d,
+                           correct_option, marks, oneword_question, oneword_answer })
+  });
+  const data = await resp.json();
+  if (data.status === 'ok') {
+    msg.className = 'alert alert-success'; msg.style.display = 'block';
+    msg.textContent = `Question #${data.order} saved!`;
+    
+    // Remove empty message
+    document.getElementById('emptyMsg')?.remove();
+    
+    // Update count
+    const cnt = document.getElementById('qCount');
+    cnt.textContent = parseInt(cnt.textContent) + 1;
+
+    // Add card to list
+    const list = document.getElementById('questionList');
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.id = `qcard_${data.mcq_id}`;
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:start;">
+        <div>
+          <span class="q-number">${data.order}</span>
+          <p style="font-weight:500; margin-bottom:0.5rem;">${question_text}</p>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; font-size:0.82rem;">
+            <span class="badge badge-blue">A: ${option_a}</span>
+            <span class="badge badge-blue">B: ${option_b}</span>
+            <span class="badge badge-blue">C: ${option_c}</span>
+            <span class="badge badge-blue">D: ${option_d}</span>
+            <span class="badge badge-green">✓ ${correct_option}</span>
+            <span class="badge badge-orange">${marks} mark(s)</span>
+          </div>
+          <p style="margin-top:0.5rem; font-size:0.85rem; color:var(--muted);">
+            🎯 Test 2: <em>${oneword_question}</em> → <strong>${oneword_answer}</strong>
+          </p>
+        </div>
+        <button onclick="deleteQ(${data.mcq_id})" class="btn btn-danger btn-sm">✕</button>
+      </div>`;
+    list.appendChild(card);
+
+    // Reset form
+    ['f_question','f_a','f_b','f_c','f_d','f_ow_q','f_ow_ans'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f_marks').value = 1;
+    document.querySelectorAll('input[name=correct]').forEach(r => r.checked = false);
+    setTimeout(() => msg.style.display = 'none', 3000);
+  }
+}
+
+async function deleteQ(id) {
+  if (!confirm('Delete this question?')) return;
+  const resp = await fetch(`/teacher/question/${id}/delete/`, {
+    method: 'POST', headers: { 'X-CSRFToken': CSRF }
+  });
+  const data = await resp.json();
+  if (data.status === 'ok') {
+    document.getElementById(`qcard_${id}`)?.remove();
+    const cnt = document.getElementById('qCount');
+    cnt.textContent = Math.max(0, parseInt(cnt.textContent) - 1);
+  }
+}
+</script>
+
+<!-- AI Generation Status -->
+<div id="aiStatus" style="display:none; margin-top:1rem;" class="alert alert-info">
+  <span id="aiStatusText">🤖 AI is generating Test 2 questions...</span>
+</div>
+
+{% if exam.ai_questions_generated %}
+<div class="alert alert-success" style="margin-top:1rem;">
+  ✅ AI has generated Test 2 questions for this exam. You can edit them by clicking each question.
+</div>
+{% endif %}
+
+<script>
+function generateAI() {
+  if (!confirm('AI will generate one-word Test 2 questions for ALL MCQs. This will REPLACE any existing Test 2 questions. Continue?')) return;
+
+  const btn = document.getElementById('aiBtn');
+  const status = document.getElementById('aiStatus');
+  const statusText = document.getElementById('aiStatusText');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+  status.style.display = 'block';
+  statusText.textContent = '🤖 AI is analysing your MCQs and generating Test 2 questions...';
+
+  fetch('/teacher/exam/{{ exam.id }}/generate-ai/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      statusText.textContent = '✅ ' + data.message;
+      status.className = 'alert alert-success';
+      btn.textContent = '✅ AI Done!';
+      setTimeout(() => location.reload(), 2000);
+    } else {
+      statusText.textContent = '❌ ' + data.message;
+      status.className = 'alert alert-error';
+      btn.disabled = false;
+      btn.textContent = '🤖 Generate Test 2 with AI';
+
+      // If no API key, redirect to profile
+      if (data.message.includes('API key')) {
+        if (confirm(data.message + '\n\nGo to Profile settings now?')) {
+          window.location.href = '/teacher/profile/';
+        }
+      }
+    }
+  })
+  .catch(err => {
+    statusText.textContent = '❌ Error: ' + err;
+    status.className = 'alert alert-error';
+    btn.disabled = false;
+    btn.textContent = '🤖 Generate Test 2 with AI';
+  });
+}
+</script>
+
+{% endblock %}

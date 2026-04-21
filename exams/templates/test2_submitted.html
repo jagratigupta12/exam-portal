@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Exam Complete{% endblock %}
+{% block extra_head %}
+<style>nav { display: none; }</style>
+{% endblock %}
+{% block content %}
+<div style="min-height:100vh; background:var(--paper); display:flex; align-items:center; justify-content:center;">
+  <div class="card" style="max-width:500px; width:100%; text-align:center; padding:2.5rem;">
+    <div style="font-size:4rem; margin-bottom:1rem;">🎉</div>
+    <h2 style="margin-bottom:0.5rem;">Exam Complete!</h2>
+    <p style="color:var(--muted); margin-bottom:1.5rem;">{{ attempt.exam.title }}</p>
+    <div class="alert alert-success" style="text-align:left;">
+      ✅ Both Test 1 and Test 2 submitted successfully.<br>
+      Your teacher will share the results with you.
+    </div>
+    <p style="color:var(--muted); font-size:0.85rem; margin-top:1.5rem;">
+      You may now close this window.
+    </p>
+  </div>
+</div>
+
+
+<script>
+(function() {
+  // Push many states so back button is blocked
+  for (var i = 0; i < 20; i++) {
+    history.pushState({ page: i }, '', window.location.href);
+  }
+  window.addEventListener('popstate', function(e) {
+    // Always push forward again
+    history.pushState({ page: 99 }, '', window.location.href);
+    // Also try to go forward
+    history.forward();
+  });
+  // Disable keyboard shortcuts for back (Alt+Left, Backspace)
+  document.addEventListener('keydown', function(e) {
+    if ((e.altKey && e.key === 'ArrowLeft') || 
+        (e.key === 'Backspace' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA')) {
+      e.preventDefault();
+      return false;
+    }
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+{% block title %}Test 1 - {{ attempt.exam.title }}{% endblock %}
+{% block extra_head %}
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+nav { display: none; }
+#layout {
+  display: grid;
+  grid-template-rows: 56px 1fr 64px;
+  grid-template-columns: 1fr 270px;
+  height: 100vh;
+}
+#topbar {
+  grid-column: 1 / -1;
+  background: #1a1a2e;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1.5rem; color: white;
+}
+.tb-info { display:flex; flex-direction:column; }
+.tb-title { font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:0.95rem; }
+.tb-student { color:rgba(255,255,255,0.6); font-size:0.78rem; margin-top:1px; }
+.tb-enroll { color:#f59e0b; font-size:0.75rem; font-family:monospace; font-weight:600; }
+#timerBox {
+  display:flex; align-items:center; gap:0.5rem;
+  background:rgba(255,255,255,0.12); border-radius:8px;
+  padding:0.35rem 1rem; font-family:'Playfair Display',Georgia,serif; font-weight:800; font-size:1.05rem;
+  min-width:100px; justify-content:center;
+}
+#timerBox.warn   { background:#d97706; }
+#timerBox.danger { background:#dc2626; animation:blink 0.8s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.6} }
+#qArea {
+  grid-column:1; grid-row:2;
+  overflow-y:auto; padding:1.5rem 2rem; background:#f5f3ee;
+}
+.qcard { background:white; border:2px solid #e0ddd8; border-radius:12px; padding:1.5rem; }
+.qcard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+.qnum-badge { background:#1a1a2e; color:white; font-family:'Playfair Display',Georgia,serif; font-weight:700;
+  border-radius:8px; padding:0.25rem 0.65rem; font-size:0.88rem; }
+.qmarks-badge { font-size:0.78rem; color:#8a8a9a; background:#f0eeea; padding:0.2rem 0.6rem; border-radius:12px; }
+.qtext { font-size:1rem; font-weight:500; line-height:1.6; margin-bottom:1.2rem; color:#111; }
+.opt {
+  display:flex; align-items:center; gap:0.8rem;
+  padding:0.75rem 1rem; border:2px solid #e0ddd8; border-radius:9px;
+  cursor:pointer; margin-bottom:0.6rem; transition:all 0.12s; font-size:0.93rem; user-select:none;
+}
+.opt:hover { border-color:#2563eb; background:#eff6ff; }
+.opt.selected { border-color:#2563eb; background:#eff6ff; font-weight:600; }
+.opt-key {
+  width:26px; height:26px; border-radius:6px;
+  background:#e0ddd8; display:flex; align-items:center; justify-content:center;
+  font-size:0.78rem; font-weight:700; flex-shrink:0;
+}
+.opt.selected .opt-key { background:#2563eb; color:white; }
+#bottomNav {
+  grid-column:1; grid-row:3;
+  background:white; border-top:2px solid #e0ddd8;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 1.5rem; gap:0.6rem;
+}
+.nav-btn {
+  padding:0.5rem 1.1rem; border-radius:8px; border:2px solid #e0ddd8;
+  font-family:'DM Sans',sans-serif; font-weight:500; font-size:0.88rem;
+  cursor:pointer; background:white; transition:all 0.12s; white-space:nowrap;
+}
+.nav-btn:hover { border-color:#1a1a2e; }
+.nav-btn.mark   { background:#fff7ed; border-color:#f59e0b; color:#92400e; }
+.nav-btn.save   { background:#eff6ff; border-color:#2563eb; color:#1e40af; }
+.nav-btn.submit-final { background:#e84c1e; border-color:#e84c1e; color:white; font-weight:700; }
+#rightPanel {
+  grid-column:2; grid-row:2/4;
+  background:white; border-left:2px solid #e0ddd8;
+  overflow-y:auto; padding:1rem;
+  display:flex; flex-direction:column; gap:0.8rem;
+}
+.rp-label { font-family:'Playfair Display',Georgia,serif; font-size:0.72rem; font-weight:700;
+  color:#8a8a9a; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem; }
+.palette-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:0.4rem; }
+.pb {
+  width:36px; height:36px; border-radius:6px; border:none;
+  font-size:0.78rem; font-weight:700; cursor:pointer; transition:all 0.12s;
+  display:flex; align-items:center; justify-content:center;
+}
+.pb.not-visited  { background:#fff; border:2px solid #d1d5db; color:#374151; }
+.pb.not-answered { background:#ef4444; color:white; }
+.pb.answered     { background:#16a34a; color:white; }
+.pb.marked       { background:#7c3aed; color:white; }
+.pb.ans-marked   { background:#16a34a; color:white; position:relative; }
+.pb.ans-marked::after {
+  content:''; position:absolute; top:2px; right:2px;
+  width:8px; height:8px; border-radius:50%; background:#7c3aed; border:1px solid white;
+}
+.pb.current { outline:3px solid #1a1a2e; outline-offset:1px; }
+.legend { display:flex; flex-direction:column; gap:0.35rem; font-size:0.75rem; }
+.leg-row { display:flex; align-items:center; gap:0.5rem; }
+.leg-dot { width:18px; height:18px; border-radius:4px; flex-shrink:0; }
+.stat-mini { display:flex; justify-content:space-between; font-size:0.82rem; padding:0.2rem 0; }
+
+/* Store question data in JSON script tags */
+{% for q in questions %}
+{% endfor %}
+</style>
+
+{% for q in questions %}
+<script type="application/json" id="qdata_{{ forloop.counter }}">
+{"id": {{ q.id }}, "display_order": {{ q.display_order }}, "marks": {{ q.marks }}, "text": "{{ q.question_text|escapejs }}", "a": "{{ q.option_a|escapejs }}", "b": "{{ q.option_b|escapejs }}", "c": "{{ q.option_c|escapejs }}", "d": "{{ q.option_d|escapejs }}", "shuffle_map": "{{ q.shuffle_map }}"}
+</script>
+{% endfor %}
+{% endblock %}
+
+{% block content %}
+
+
+<div id="layout">
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="tb-info">
+      <div class="tb-title">
+        {{ attempt.exam.title }}
+        {% if attempt.exam.branch %}&nbsp;·&nbsp;{{ attempt.exam.branch }}{% endif %}
+        {% if attempt.exam.year %}&nbsp;·&nbsp;{{ attempt.exam.year }}{% endif %}
+        {% if attempt.exam.semester %}&nbsp;·&nbsp;{{ attempt.exam.semester }}{% endif %}
+      </div>
+      <div class="tb-student">
+        {{ attempt.student_name }}
+        {% if attempt.enrollment_no %}
+        &nbsp;|&nbsp; <span class="tb-enroll">{{ attempt.enrollment_no }}</span>
+        {% endif %}
+        {% if attempt.exam.faculty_name %}
+        &nbsp;|&nbsp; <span style="color:rgba(255,255,255,0.4); font-size:0.72rem;">{{ attempt.exam.faculty_name }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div id="timerBox">⏱ <span id="timerDisplay">--:--</span></div>
+    <div style="font-size:0.78rem; color:rgba(255,255,255,0.5);">
+      Q <span id="curQNum">1</span> / {{ questions|length }}
+    </div>
+  </div>
+
+  <!-- QUESTION AREA -->
+  <div id="qArea">
+    <form method="post" action="{% url 'submit_test1' attempt.id %}" id="examForm">
+      {% csrf_token %}
+      {% for q in questions %}
+      <input type="hidden" name="q_{{ q.id }}" id="ans_{{ q.id }}" value="">
+      <input type="hidden" name="shuffle_{{ q.id }}" value="{{ q.shuffle_map }}">
+      {% endfor %}
+    </form>
+    <div class="qcard">
+      <div class="qcard-header">
+        <span class="qnum-badge" id="dispQNum">Q1</span>
+        <span class="qmarks-badge" id="dispMarks">1 mark</span>
+      </div>
+      <div class="qtext" id="dispQText"></div>
+      <div id="dispOptions"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div id="bottomNav">
+    <button class="nav-btn" onclick="goTo(currentQ - 1)">◀ Previous</button>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="nav-btn mark" onclick="markReview()">🔖 Mark for Review &amp; Next</button>
+      <button class="nav-btn save" id="saveNextBtn" onclick="saveAndNext()">Save &amp; Next ▶</button>
+      <button class="nav-btn submit-final" id="submitFinalBtn" onclick="confirmSubmit()" style="display:none;">
+        🚀 Submit &amp; Proceed to Test 2
+      </button>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="rightPanel">
+    <div>
+      <div class="rp-label">Question Palette</div>
+      <div class="palette-grid" id="paletteGrid">
+        {% for q in questions %}
+        <button class="pb not-visited" id="pb_{{ forloop.counter }}"
+                onclick="goTo({{ forloop.counter }})">{{ forloop.counter }}</button>
+        {% endfor %}
+      </div>
+    </div>
+    <div>
+      <div class="rp-label">Legend</div>
+      <div class="legend">
+        <div class="leg-row"><span class="leg-dot" style="background:#16a34a;"></span> Answered</div>
+        <div class="leg-row"><span class="leg-dot" style="background:#ef4444;"></span> Not Answered</div>
+        <div class="leg-row"><span class="leg-dot" style="background:#7c3aed;"></span> Marked for Review</div>
+        <div class="leg-row"><span class="leg-dot" style="background:#16a34a;border:3px solid #7c3aed;"></span> Ans + Marked</div>
+        <div class="leg-row"><span class="leg-dot" style="background:#fff;border:2px solid #d1d5db;"></span> Not Visited</div>
+      </div>
+    </div>
+    <div>
+      <div class="rp-label">Summary</div>
+      <div class="stat-mini"><span>Answered</span><strong id="st-ans" style="color:#16a34a;">0</strong></div>
+      <div class="stat-mini"><span>Not Answered</span><strong id="st-notans" style="color:#ef4444;">0</strong></div>
+      <div class="stat-mini"><span>Marked</span><strong id="st-marked" style="color:#7c3aed;">0</strong></div>
+      <div class="stat-mini"><span>Not Visited</span><strong id="st-nv">{{ questions|length }}</strong></div>
+    </div>
+
+    <!-- TEST 2 PREVIEW — LOCKED -->
+    <div style="border-top:2px solid #e0ddd8; padding-top:0.8rem;">
+      <div class="rp-label" style="color:#7c3aed;">🔒 Test 2 Preview</div>
+      <div style="background:#f5f3ff; border:1.5px solid #ddd6fe; border-radius:8px;
+                  padding:0.7rem; margin-bottom:0.6rem; font-size:0.78rem; color:#5b21b6; line-height:1.5;">
+        {% if test2_count > 0 %}
+          <strong>{{ test2_count }} one-word questions</strong> will be unlocked after Test 1 submission.
+          Based on your correct answers.
+        {% else %}
+          One-word questions will be generated after Test 1.
+        {% endif %}
+      </div>
+
+      {% if test2_preview %}
+      <div id="t2PreviewList" style="max-height:220px; overflow-y:auto;">
+        {% for item in test2_preview %}
+        <div class="t2-prev-item locked" id="t2prev_{{ item.mcq_order }}"
+             style="background:#f5f0ff; border:1.5px solid #e9d5ff;
+                    border-radius:7px; padding:0.5rem 0.7rem; margin-bottom:0.4rem;
+                    font-size:0.78rem; position:relative; opacity:0.6;">
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <span style="background:#7c3aed; color:white; border-radius:4px;
+                         padding:1px 5px; font-size:0.68rem; font-weight:700; flex-shrink:0;">
+              Q{{ item.mcq_order }}
+            </span>
+            <span style="color:#4c1d95; filter:blur(3px);" class="t2-text">
+              {{ item.question }}
+            </span>
+            <span class="lock-icon" style="position:absolute; right:6px; top:50%;
+                  transform:translateY(-50%); font-size:0.9rem;">🔒</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <p style="font-size:0.72rem; color:#7c3aed; text-align:center; margin-top:0.4rem;">
+        Submitting Test 1 will unlock these questions
+      </p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [];
+{% for q in questions %}
+(function(){
+  var el = document.getElementById('qdata_{{ forloop.counter }}');
+  if(el) questions.push(JSON.parse(el.textContent));
+})();
+{% endfor %}
+
+const totalQ = questions.length;
+const stateArr = new Array(totalQ).fill(0);
+const answers  = new Array(totalQ).fill('');
+let currentQ   = 1;
+let remaining  = {{ remaining_seconds }};
+
+function renderQuestion(n) {
+  currentQ = n;
+  if(n < 1 || n > totalQ) return;
+  const q = questions[n - 1];
+  document.getElementById('dispQNum').textContent  = 'Q' + n;
+  document.getElementById('dispMarks').textContent = q.marks + ' mark' + (q.marks > 1 ? 's' : '');
+  document.getElementById('dispQText').textContent = q.text;
+  document.getElementById('curQNum').textContent   = n;
+  const saved = answers[n - 1];
+  const opts  = [['A', q.a], ['B', q.b], ['C', q.c], ['D', q.d]];
+  let html = '';
+  opts.forEach(function(o) {
+    const sel = saved === o[0] ? 'selected' : '';
+    html += '<div class="opt ' + sel + '" onclick="selectOpt(' + n + ',\'' + o[0] + '\',this)">'
+          + '<span class="opt-key">' + o[0] + '</span><span>' + o[1] + '</span></div>';
+  });
+  document.getElementById('dispOptions').innerHTML = html;
+  if(stateArr[n-1] === 0) stateArr[n-1] = 1;
+  document.getElementById('saveNextBtn').style.display    = (n===totalQ) ? 'none' : '';
+  document.getElementById('submitFinalBtn').style.display = (n===totalQ) ? '' : 'none';
+  updatePalette();
+  document.getElementById('qArea').scrollTo({top:0, behavior:'smooth'});
+}
+
+function selectOpt(n, key, el) {
+  document.querySelectorAll('#dispOptions .opt').forEach(function(o){ o.classList.remove('selected'); });
+  el.classList.add('selected');
+  answers[n-1] = key;
+  stateArr[n-1] = (stateArr[n-1] === 3) ? 4 : 2;
+  syncHidden(n);
+  updatePalette();
+}
+
+function syncHidden(n) {
+  var qid = questions[n-1].id;
+  document.getElementById('ans_' + qid).value = answers[n-1];
+}
+
+function saveAndNext() {
+  if(answers[currentQ-1] !== '') {
+    // Has answer: if was marked-for-review, REMOVE the mark (blue → green)
+    stateArr[currentQ-1] = 2; // answered, no longer marked
+  } else {
+    stateArr[currentQ-1] = 1; // visited, no answer
+  }
+  syncHidden(currentQ);
+  updatePalette();
+  if(currentQ < totalQ) goTo(currentQ + 1);
+}
+
+function markReview() {
+  // Mark for review and move to next
+  stateArr[currentQ-1] = (answers[currentQ-1] !== '') ? 4 : 3;
+  syncHidden(currentQ);
+  updatePalette();
+  // Always go to next question
+  if(currentQ < totalQ) goTo(currentQ + 1);
+  else updatePalette(); // last question - stay but update palette
+}
+
+function goTo(n) {
+  if(n < 1 || n > totalQ) return;
+  syncHidden(currentQ);
+  renderQuestion(n);
+}
+
+var stateClass = ['not-visited','not-answered','answered','marked','ans-marked'];
+function updatePalette() {
+  var ans=0, notAns=0, mrk=0, nv=0;
+  stateArr.forEach(function(s, i) {
+    var btn = document.getElementById('pb_' + (i+1));
+    btn.className = 'pb ' + stateClass[s] + ((i+1===currentQ) ? ' current' : '');
+    if(s===2||s===4) ans++;
+    else if(s===1) notAns++;
+    else if(s===3) mrk++;
+    else nv++;
+  });
+  document.getElementById('st-ans').textContent    = ans;
+  document.getElementById('st-notans').textContent = notAns;
+  document.getElementById('st-marked').textContent = mrk;
+  document.getElementById('st-nv').textContent     = nv;
+}
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function tick() {
+  var m = Math.floor(remaining/60), s = remaining%60;
+  document.getElementById('timerDisplay').textContent = pad(m)+':'+pad(s);
+  var box = document.getElementById('timerBox');
+  if(remaining <= 60) box.className = 'danger';
+  else if(remaining <= 300) box.className = 'warn';
+  if(remaining <= 0){ autoSubmit(); return; }
+  remaining--;
+  setTimeout(tick, 1000);
+}
+tick();
+
+function autoSubmit() {
+  for(var i=1;i<=totalQ;i++) syncHidden(i);
+  window.onbeforeunload = null;
+  document.getElementById('examForm').submit();
+}
+
+function confirmSubmit() {
+  for(var i=1;i<=totalQ;i++) syncHidden(i);
+  var notAns = stateArr.filter(function(s){ return s===0||s===1; }).length;
+  var warning = notAns > 0 ? notAns + ' question(s) unanswered.\n\n' : '';
+  var msg = warning + '⚠️ Once you submit and proceed to Test 2, you CANNOT return to Test 1.\n\nAre you sure you want to submit?';
+  if(confirm(msg)){ window.onbeforeunload = null; document.getElementById('examForm').submit(); }
+}
+
+// Block back button
+for(var _i=0;_i<20;_i++) history.pushState({p:_i},'',window.location.href);
+window.addEventListener('popstate', function() {
+  history.pushState({p:99},'',window.location.href);
+  history.forward();
+});
+document.addEventListener('keydown', function(e) {
+  if((e.altKey && e.key==='ArrowLeft') ||
+     (e.key==='Backspace' && e.target.tagName!=='INPUT' && e.target.tagName!=='TEXTAREA')) {
+    e.preventDefault(); return false;
+  }
+});
+window.onbeforeunload = function(){ return 'Exam in progress. Leave anyway?'; };
+
+renderQuestion(1);
+
+// SEB handles fullscreen lock — just warn on accidental navigation
+window.onbeforeunload = function(){ return 'Exam in progress!'; };
+document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+// ── SHOW FULLSCREEN BANNER ON LOAD (must click to enter) ────────
+// Browser cannot auto-enter fullscreen - user must click
+window.addEventListener('load', function() {
+  var isFS = !!(document.fullscreenElement || document.webkitFullscreenElement ||
+                document.mozFullScreenElement || document.msFullscreenElement);
+  if (!isFS) {
+    document.getElementById('fsRequiredBanner').style.display = 'flex';
+  }
+});
+</script>
+{% endblock %}
+
+  <h2 style="font-family:'Playfair Display',Georgia,serif; font-size:1.5rem; margin-bottom:0.5rem;" id="warnTitle">
+    Warning!
+  </h2>
+  <p style="color:rgba(255,255,255,0.7); max-width:400px; margin-bottom:1.5rem;" id="warnMsg">
+    You have exited fullscreen.
+  </p>
+  <div style="display:flex; gap:1rem;">
+    <button onclick="resumeExam()" style="
+      padding:0.7rem 2rem; border-radius:8px; border:none;
+      background:#e84c1e; color:white; font-weight:700; cursor:pointer; font-size:1rem;">
+      🔒 Resume Exam
+    </button>
+  </div>
+  <p style="font-size:0.75rem; color:rgba(255,255,255,0.3); margin-top:1rem;" id="warnCount"></p>
+</div>
+
+  <h2 style="font-family:'Playfair Display',Georgia,serif; font-size:1.8rem; margin-bottom:0.5rem;">
+    Too Many Violations!
+  </h2>
+  <p style="font-size:1.1rem; margin-bottom:1rem;">Your exam will be auto-submitted in:</p>
+  <div style="font-family:'Playfair Display',Georgia,serif; font-size:4rem; font-weight:800;" id="countdown">5</div>
+  <p style="color:rgba(255,255,255,0.7); margin-top:1rem; font-size:0.88rem;">
+    Contact your teacher if this is an error.
+  </p>
+</div>
+

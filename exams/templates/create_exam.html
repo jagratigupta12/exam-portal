@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Create Exam{% endblock %}
+{% block content %}
+<div class="container" style="max-width:640px;">
+  <div class="card" style="margin-top:2rem;">
+    <div class="page-header">
+      <h1 style="font-size:1.7rem;">Create New Exam</h1>
+      <p>Set up your two-phase exam</p>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>Exam Title *</label>
+        <input type="text" name="title" required placeholder="e.g. Chapter 5 Science Test">
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Promote % to Test 2</label>
+          <input type="number" name="percentage" value="30" min="1" max="100">
+          <p style="font-size:0.78rem; color:var(--muted); margin-top:0.3rem;">% of correct Test 1 answers</p>
+        </div>
+        <div class="form-group">
+          <label>Test Duration (minutes) ⏱</label>
+          <input type="number" name="duration_minutes" value="30" min="1" max="300">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Exam Window Opens At</label>
+          <input type="datetime-local" name="start_time">
+          <p style="font-size:0.78rem; color:var(--muted); margin-top:0.3rem;">Leave blank = open anytime</p>
+        </div>
+        <div class="form-group">
+          <label>Exam Window Closes At</label>
+          <input type="datetime-local" name="end_time">
+        </div>
+      </div>
+
+      <hr class="divider">
+      <p style="font-size:0.85rem; color:var(--muted); margin-bottom:1rem;">Additional Information</p>
+
+      <div class="form-group">
+        <label>Faculty Name</label>
+        <input type="text" name="faculty_name" placeholder="e.g. Dr. Priya Sharma">
+      </div>
+
+      <div class="grid-3">
+        <div class="form-group">
+          <label>Branch / Department</label>
+          <input type="text" name="branch" placeholder="e.g. Computer Science">
+        </div>
+        <div class="form-group">
+          <label>Year</label>
+          <input type="text" name="year" placeholder="e.g. 2nd Year">
+        </div>
+        <div class="form-group">
+          <label>Semester</label>
+          <input type="text" name="semester" placeholder="e.g. Sem 4">
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="form-group">
+        <label>Instructions for Students</label>
+        <textarea name="instructions" rows="5">1. Read all questions carefully.
+2. Each MCQ has only one correct answer.
+3. Do not refresh the page during the exam.
+4. The exam will auto-submit when time runs out.
+5. You cannot go back once you submit.</textarea>
+      </div>
+
+      <div style="display:flex; gap:0.8rem;">
+        <button type="submit" class="btn btn-accent">Create &amp; Add Questions →</button>
+        <a href="{% url 'teacher_dashboard' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

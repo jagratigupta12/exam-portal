@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Edit Settings - {{ exam.title }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:640px;">
+  <div class="card" style="margin-top:2rem;">
+    <div class="page-header">
+      <h1 style="font-size:1.7rem;">Edit Exam Settings</h1>
+      <p>{{ exam.title }}</p>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>Exam Title *</label>
+        <input type="text" name="title" value="{{ exam.title }}" required>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Promote % to Test 2</label>
+          <input type="number" name="percentage" value="{{ exam.test1_percentage }}" min="1" max="100">
+        </div>
+        <div class="form-group">
+          <label>Test Duration (minutes) ⏱</label>
+          <input type="number" name="duration_minutes" value="{{ exam.duration_minutes }}" min="1" max="300">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Exam Window Opens At</label>
+          <input type="datetime-local" name="start_time"
+            {% if exam.start_time %}value="{{ exam.start_time|date:'Y-m-d' }}T{{ exam.start_time|time:'H:i' }}"{% endif %}>
+        </div>
+        <div class="form-group">
+          <label>Exam Window Closes At</label>
+          <input type="datetime-local" name="end_time"
+            {% if exam.end_time %}value="{{ exam.end_time|date:'Y-m-d' }}T{{ exam.end_time|time:'H:i' }}"{% endif %}>
+        </div>
+      </div>
+
+      <hr class="divider">
+      <p style="font-size:0.85rem; color:var(--muted); margin-bottom:1rem;">Additional Information</p>
+
+      <div class="form-group">
+        <label>Faculty Name</label>
+        <input type="text" name="faculty_name" value="{{ exam.faculty_name }}"
+               placeholder="e.g. Dr. Priya Sharma">
+      </div>
+
+      <div class="grid-3">
+        <div class="form-group">
+          <label>Branch / Department</label>
+          <input type="text" name="branch" value="{{ exam.branch }}"
+                 placeholder="e.g. Computer Science">
+        </div>
+        <div class="form-group">
+          <label>Year</label>
+          <input type="text" name="year" value="{{ exam.year }}"
+                 placeholder="e.g. 2nd Year">
+        </div>
+        <div class="form-group">
+          <label>Semester</label>
+          <input type="text" name="semester" value="{{ exam.semester }}"
+                 placeholder="e.g. Sem 4">
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="form-group">
+        <label>Instructions for Students</label>
+        <textarea name="instructions" rows="6">{{ exam.instructions }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+          <input type="checkbox" name="is_active" {% if exam.is_active %}checked{% endif %}
+                 style="width:auto;">
+          Exam is Active (students can access)
+        </label>
+      </div>
+
+      <div style="display:flex; gap:0.8rem;">
+        <button type="submit" class="btn btn-accent">Save Settings</button>
+        <a href="{% url 'add_questions' exam.id %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

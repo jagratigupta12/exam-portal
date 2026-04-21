@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}ExamFlow - Smart Online Exam Platform{% endblock %}
+{% block content %}
+<div style="background: var(--ink); color: white; padding: 5rem 2rem; text-align: center;">
+  <h1 style="font-size: 3rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 1rem; font-family: 'Georgia', 'Times New Roman', serif;">
+    Smart Exams, <span style="color: var(--accent);">Smarter Scoring</span>
+  </h1>
+  <p style="font-size: 1.1rem; color: rgba(255,255,255,0.6); max-width: 540px; margin: 0 auto 2rem;">
+    Two-phase adaptive testing — MCQ Test 1 automatically generates a targeted one-word Test 2 for fair assessment.
+  </p>
+  <a href="{% url 'teacher_login' %}" class="btn btn-accent" style="font-size: 1rem; padding: 0.8rem 2rem;">
+    Teacher Login →
+  </a>
+</div>
+
+<div class="container" style="padding-top: 3rem;">
+  <div class="grid-3">
+    <div class="card" style="text-align:center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">📝</div>
+      <h3 style="margin-bottom: 0.5rem;">MCQ Test 1</h3>
+      <p style="color: var(--muted); font-size:0.9rem;">Students attempt all MCQ questions. Top % of correct answers are selected for Test 2.</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">🎯</div>
+      <h3 style="margin-bottom: 0.5rem;">One-Word Test 2</h3>
+      <p style="color: var(--muted); font-size:0.9rem;">Corresponding one-word questions test fundamental understanding of what they got right.</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">📊</div>
+      <h3 style="margin-bottom: 0.5rem;">Smart Scoring</h3>
+      <p style="color: var(--muted); font-size:0.9rem;">Direct marks from correct non-promoted questions + Test 2 marks for promoted questions. No negative marking.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 1rem;">
+    <h3 style="margin-bottom: 0.8rem;">Scoring Formula</h3>
+    <div style="background: #f9f8f6; border-radius: 8px; padding: 1.2rem; font-family: monospace; font-size: 0.9rem; line-height: 1.8; color: #333;">
+      <strong>Total Marks</strong> = Direct Marks + Bonus Marks<br>
+      <strong>Direct Marks</strong> = Marks of correctly answered questions NOT promoted to Test 2<br>
+      <strong>Bonus Marks</strong> = Marks of Test 2 questions answered correctly (original Test 1 mark awarded)<br>
+      <strong>Penalty</strong> = None
+    </div>
+  </div>
+</div>
+{% endblock %}

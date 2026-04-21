@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ exam.title }} — Login{% endblock %}
+{% block content %}
+<div class="container" style="max-width:440px;">
+  <div class="card" style="margin-top:3rem;">
+    <h2 style="margin-bottom:0.3rem;">{{ exam.title }}</h2>
+    <p style="color:var(--muted); margin-bottom:1.5rem; font-size:0.88rem;">
+      Enter your credentials to begin
+    </p>
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Enrollment Number</label>
+        <input type="text" name="enrollment_no" required autofocus
+               placeholder="e.g. 2021CS001"
+               style="letter-spacing:0.05em;">
+      </div>
+      <div class="form-group">
+        <label>Access Code</label>
+        <input type="text" name="access_code" required
+               placeholder="e.g. XK9P2MQR"
+               style="letter-spacing:0.2em; font-weight:600; text-transform:uppercase;">
+      </div>
+      <button type="submit" class="btn btn-accent"
+              style="width:100%; font-size:1rem; padding:0.85rem;">
+        Start Exam →
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

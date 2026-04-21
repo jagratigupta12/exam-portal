@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Exam Analytics - {{ exam.title }}{% endblock %}
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="container-wide">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+    <div class="page-header" style="margin:0;">
+      <h1>Question Paper Analysis</h1>
+      <p>{{ exam.title }} — {{ total_students }} students</p>
+    </div>
+    <div style="display:flex; gap:0.7rem;">
+      <a href="{% url 'generate_all_results_pdf' exam.id %}" class="btn btn-accent">⬇️ All Results PDF</a>
+      <a href="{% url 'exam_results' exam.id %}" class="btn btn-outline">← Results</a>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.5rem;">
+    <div class="stat-card" style="border-top:4px solid #1a1a2e; text-align:center;">
+      <div class="stat-val">{{ total_students }}</div>
+      <div class="stat-lbl">Total Students</div>
+    </div>
+    <div class="stat-card" style="border-top:4px solid #16a34a; text-align:center;">
+      <div class="stat-val" style="color:#16a34a;">{{ easy_count }}</div>
+      <div class="stat-lbl">Easy Questions (≥70%)</div>
+    </div>
+    <div class="stat-card" style="border-top:4px solid #f59e0b; text-align:center;">
+      <div class="stat-val" style="color:#f59e0b;">{{ medium_count }}</div>
+      <div class="stat-lbl">Medium Questions</div>
+    </div>
+    <div class="stat-card" style="border-top:4px solid #ef4444; text-align:center;">
+      <div class="stat-val" style="color:#ef4444;">{{ hard_count }}</div>
+      <div class="stat-lbl">Hard Questions (&lt;40%)</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:1.5rem;">
+    <!-- Q-wise correct % bar chart -->
+    <div class="card">
+      <h3 style="margin-bottom:1rem;">Question-wise Correct % (All Students)</h3>
+      <canvas id="qBar" height="250"></canvas>
+    </div>
+
+    <!-- Difficulty Pie -->
+    <div class="card">
+      <h3 style="margin-bottom:1rem;">Difficulty Distribution</h3>
+      <canvas id="diffPie" height="250"></canvas>
+      <div style="display:flex; justify-content:center; gap:1rem; margin-top:0.8rem; font-size:0.82rem;">
+        <span style="color:#16a34a;">● Easy: {{ easy_count }}</span>
+        <span style="color:#f59e0b;">● Medium: {{ medium_count }}</span>
+        <span style="color:#ef4444;">● Hard: {{ hard_count }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Per-Question Detail Table -->
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div style="padding:1.2rem 1.5rem; border-bottom:2px solid var(--border);">
+      <h3>Per-Question Breakdown</h3>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Question</th>
+          <th>Correct Ans</th>
+          <th style="color:#16a34a;">Correct</th>
+          <th style="color:#ef4444;">Wrong</th>
+          <th style="color:#9ca3af;">Skipped</th>
+          <th>% Correct</th>
+          <th>Difficulty</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in q_analysis %}
+        <tr>
+          <td><strong>Q{{ q.order }}</strong></td>
+          <td style="font-size:0.82rem; max-width:300px;">{{ q.text }}{% if q.text|length >= 80 %}...{% endif %}</td>
+          <td style="text-align:center; font-weight:700; color:#16a34a;">{{ q.correct_option }}</td>
+          <td style="text-align:center; color:#16a34a; font-weight:600;">{{ q.correct }}</td>
+          <td style="text-align:center; color:#ef4444; font-weight:600;">{{ q.wrong }}</td>
+          <td style="text-align:center; color:#9ca3af;">{{ q.skipped }}</td>
+          <td style="text-align:center;">
+            <div style="background:var(--border); border-radius:4px; height:6px; width:80px; display:inline-block; vertical-align:middle; margin-right:6px;">
+              <div style="background:{% if q.correct_pct >= 70 %}#16a34a{% elif q.correct_pct >= 40 %}#f59e0b{% else %}#ef4444{% endif %};
+                           height:100%; width:{{ q.correct_pct }}%; border-radius:4px;"></div>
+            </div>
+            {{ q.correct_pct }}%
+          </td>
+          <td style="text-align:center;">
+            <span class="badge {% if q.difficulty == 'Easy' %}badge-green{% elif q.difficulty == 'Medium' %}badge-orange{% else %}badge-red{% endif %}">
+              {{ q.difficulty }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+var qLabels = {{ q_labels|safe }};
+var qPcts   = {{ q_correct_pcts|safe }};
+var colors  = qPcts.map(p => p >= 70 ? '#16a34a' : (p >= 40 ? '#f59e0b' : '#ef4444'));
+
+new Chart(document.getElementById('qBar'), {
+  type:'bar',
+  data:{ labels:qLabels, datasets:[{
+    label:'% Students Correct', data:qPcts,
+    backgroundColor:colors, borderRadius:4
+  }]},
+  options:{ plugins:{legend:{display:false}},
+    scales:{ y:{ beginAtZero:true, max:100,
+      ticks:{ callback: v => v+'%' } } } }
+});
+
+new Chart(document.getElementById('diffPie'), {
+  type:'doughnut',
+  data:{
+    labels:['Easy (≥70%)','Medium (40-69%)','Hard (<40%)'],
+    datasets:[{ data:[{{ easy_count }},{{ medium_count }},{{ hard_count }}],
+      backgroundColor:['#16a34a','#f59e0b','#ef4444'], borderWidth:0 }]
+  },
+  options:{ plugins:{ legend:{ position:'bottom' } }, cutout:'60%' }
+});
+</script>
+{% endblock %}

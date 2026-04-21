@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Teacher Dashboard{% endblock %}
+{% block content %}
+<div class="container-wide">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+    <div class="page-header" style="margin:0;">
+      <h1>My Exams</h1>
+      <p>Welcome, {{ user.get_full_name|default:user.username }}</p>
+    </div>
+    <a href="{% url 'create_exam' %}" class="btn btn-accent">+ Create Exam</a>
+  </div>
+
+  {% if exams %}
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table>
+      <thead>
+        <tr>
+          <th>Exam Title</th>
+          <th>Promote %</th>
+          <th>Questions</th>
+          <th>Attempts</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for exam in exams %}
+        <tr>
+          <td><strong>{{ exam.title }}</strong></td>
+          <td><span class="badge badge-orange">{{ exam.test1_percentage }}%</span></td>
+          <td>{{ exam.mcq_questions.count }} MCQs</td>
+          <td>{{ exam.studentattempt_set.count }} attempts</td>
+          <td>
+            {% if exam.is_active %}
+              <span class="badge badge-green">Active</span>
+            {% else %}
+              <span class="badge badge-red">Closed</span>
+            {% endif %}
+          </td>
+          <td style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <a href="{% url 'add_questions' exam.id %}" class="btn btn-outline btn-sm">✏️ Edit</a>
+            <a href="{% url 'manage_students' exam.id %}" class="btn btn-outline btn-sm">👥 Students</a>
+            <a href="{% url 'exam_results' exam.id %}" class="btn btn-primary btn-sm">Results</a>
+            <button onclick="copyLink('{{ request.scheme }}://{{ request.get_host }}{% url 'student_register' exam.id %}')"
+                    class="btn btn-outline btn-sm">📋 Link</button>
+            <button onclick="deleteExam({{ exam.id }}, '{{ exam.title|escapejs }}')"
+                    class="btn btn-danger btn-sm">🗑</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card" style="text-align:center; padding: 3rem;">
+    <div style="font-size:3rem; margin-bottom:1rem;">📚</div>
+    <h3>No exams yet</h3>
+    <p style="color:var(--muted); margin-bottom:1.5rem;">Create your first exam to get started</p>
+    <a href="{% url 'create_exam' %}" class="btn btn-accent">Create First Exam</a>
+  </div>
+  {% endif %}
+</div>
+
+<div id="toast" style="position:fixed; bottom:1.5rem; right:1.5rem; background:var(--ink); color:white;
+  padding:0.8rem 1.5rem; border-radius:8px; font-size:0.9rem; display:none; z-index:999;">
+  Link copied!
+</div>
+<script>
+function copyLink(url) {
+  navigator.clipboard.writeText(url);
+  const t = document.getElementById('toast');
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2500);
+}
+
+function deleteExam(id, title) {
+  if (!confirm('Delete exam "' + title + '"?\n\nThis will permanently delete ALL questions, student data, and results.\n\nThis cannot be undone!')) return;
+  if (!confirm('Are you absolutely sure? All data will be lost.')) return;
+
+  fetch('/teacher/exam/' + id + '/delete/', {
+    method: 'POST',
+    headers: {'X-CSRFToken': '{{ csrf_token }}'}
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') location.reload();
+    else alert('Error: ' + data.message);
+  });
+}
+</script>
+{% endblock %}

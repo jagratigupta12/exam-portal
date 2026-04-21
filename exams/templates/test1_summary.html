@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Test 1 Submitted{% endblock %}
+{% block extra_head %}
+<style>
+nav { display: none; }
+body { background: #0d0d14; }
+</style>
+{% endblock %}
+{% block content %}
+<div style="min-height:100vh; background:#0d0d14; display:flex; align-items:center;
+            justify-content:center; padding:2rem;">
+
+  <div style="width:100%; max-width:900px;">
+
+    <!-- Header -->
+    <div style="text-align:center; margin-bottom:2rem;">
+      <div style="font-size:3rem; margin-bottom:0.5rem;">✅</div>
+      <h1 style="font-family:'Playfair Display',Georgia,serif; color:white; font-size:1.8rem; margin-bottom:0.3rem;">
+        Test 1 Submitted!
+      </h1>
+      <p style="color:rgba(255,255,255,0.5);">{{ attempt.exam.title }}</p>
+    </div>
+
+    <!-- Stats Row -->
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-bottom:2rem;">
+      <div style="background:#1a1a2e; border:1px solid rgba(255,255,255,0.1);
+                  border-radius:12px; padding:1.2rem; text-align:center;">
+        <div style="font-family:'Playfair Display',Georgia,serif; font-size:2rem; font-weight:800;
+                    color:#16a34a;">{{ attempted }}</div>
+        <div style="color:rgba(255,255,255,0.5); font-size:0.82rem; margin-top:0.3rem;">Attempted</div>
+      </div>
+      <div style="background:#1a1a2e; border:1px solid rgba(255,255,255,0.1);
+                  border-radius:12px; padding:1.2rem; text-align:center;">
+        <div style="font-family:'Playfair Display',Georgia,serif; font-size:2rem; font-weight:800;
+                    color:#e84c1e;">{{ unattempted }}</div>
+        <div style="color:rgba(255,255,255,0.5); font-size:0.82rem; margin-top:0.3rem;">Not Attempted</div>
+      </div>
+      <div style="background:#1a1a2e; border:1px solid rgba(255,255,255,0.1);
+                  border-radius:12px; padding:1.2rem; text-align:center;">
+        <div style="font-family:'Playfair Display',Georgia,serif; font-size:2rem; font-weight:800;
+                    color:#7c3aed;">{{ test2_count }}</div>
+        <div style="color:rgba(255,255,255,0.5); font-size:0.82rem; margin-top:0.3rem;">Test 2 Questions</div>
+      </div>
+    </div>
+
+    {% if test2_unlocked %}
+    <!-- Test 2 Unlocked Section -->
+    <div style="background:#1a1a2e; border:2px solid #7c3aed;
+                border-radius:16px; padding:1.5rem; margin-bottom:1.5rem;">
+
+      <div style="display:flex; align-items:center; gap:0.8rem; margin-bottom:1.2rem;">
+        <span style="font-size:1.5rem;">🔓</span>
+        <div>
+          <h2 style="font-family:'Playfair Display',Georgia,serif; color:white; font-size:1.1rem; margin:0;">
+            Test 2 Unlocked — {{ test2_count }} One-Word Questions
+          </h2>
+          <p style="color:rgba(255,255,255,0.5); font-size:0.82rem; margin:0.2rem 0 0;">
+            These questions are based on what you answered correctly in Test 1
+          </p>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:0.6rem; max-height:300px; overflow-y:auto;">
+        {% for item in test2_unlocked %}
+        <div style="background:rgba(124,58,237,0.15); border:1px solid rgba(124,58,237,0.3);
+                    border-radius:8px; padding:0.8rem 1rem; display:flex; gap:0.8rem; align-items:start;">
+          <span style="background:#7c3aed; color:white; border-radius:5px; padding:2px 8px;
+                       font-size:0.72rem; font-weight:700; flex-shrink:0; margin-top:2px;">
+            MCQ {{ item.mcq_order }}
+          </span>
+          <div>
+            <p style="color:rgba(255,255,255,0.4); font-size:0.72rem; margin:0 0 0.2rem;">
+              Based on: {{ item.mcq_text|truncatechars:60 }}
+            </p>
+            <p style="color:white; font-size:0.9rem; font-weight:500; margin:0;">
+              {{ item.ow_question }}
+            </p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <div style="background:#1a1a2e; border:1px solid rgba(255,255,255,0.1);
+                border-radius:12px; padding:1.5rem; text-align:center; margin-bottom:1.5rem;">
+      <p style="color:rgba(255,255,255,0.5);">
+        No questions were promoted to Test 2. Your exam will be completed now.
+      </p>
+    </div>
+    {% endif %}
+
+    <a href="{% url 'take_test2' attempt.id %}"
+       style="display:block; width:100%; padding:1rem; border-radius:10px;
+              background:#7c3aed; color:white; font-family:'Playfair Display',Georgia,serif;
+              font-weight:700; font-size:1rem; text-align:center; text-decoration:none;
+              transition:background 0.15s;"
+       onmouseover="this.style.background='#6d28d9'"
+       onmouseout="this.style.background='#7c3aed'">
+      Start Test 2 →
+    </a>
+  </div>
+</div>
+
+<script>
+for(var i=0;i<10;i++) history.pushState(null,'',window.location.href);
+window.addEventListener('popstate',function(){ history.pushState(null,'',window.location.href); });
+</script>
+{% endblock %}
