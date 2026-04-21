@@ -13,6 +13,7 @@ SECRET_KEY = 'django-insecure-examportal-change-this-in-production-xyz123'
 DEBUG = False
 
 ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = ['https://web-production-49e15.up.railway.app']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
