@@ -1,1 +1,1 @@
-web: gunicorn exam_portal.wsgi
+web: python manage.py migrate && gunicorn exam_portal.wsgi
